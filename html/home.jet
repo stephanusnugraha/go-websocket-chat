@@ -39,10 +39,13 @@
                 <input type="text" name="message" id="message" class="form-control" autocomplete="off">
             </div>
 
+            <hr>
+            <a href="javascript:void(0);" class="btn btn-outline-secondary" id="sendBtn">Send Message</a>
+
             <input type="hidden" name="action" id="action">
 
             <hr>
-            <div id="output" class="chatbox">
+            <div id="output" class="chatterbox">
 
             </div>
         </div>
@@ -61,9 +64,12 @@
 
 <script>
     let socket = null;
+    let o = document.getElementById("output");
+    let userField = document.getElementById("username");
+    let messageField = document.getElementById("message");
 
     window.onbeforeunload = function () {
-        console.log("Leaving")
+        console.log("Leaving");
         let jsonData = {};
         jsonData["action"] = "left";
         socket.send(JSON.stringify(jsonData))
@@ -73,24 +79,20 @@
         socket = new WebSocket("ws://127.0.0.1:8081/ws");
 
         socket.onopen = () => {
-            console.log("Successfully connected")
+            console.log("Successfully connected");
         }
 
         socket.onclose = () => {
-            console.log("Connection closed")
+            console.log("connection closed");
         }
 
         socket.onerror = error => {
-            console.log("There was an error")
+            console.log("there was an error");
         }
 
         socket.onmessage = msg => {
-            // console.log(msg);
-            // let j = JSON.parse(msg.data);
-            // console.log(j);
-
             let data = JSON.parse(msg.data);
-            console.log("Action is ", data.action);
+            console.log("Action is", data.action);
 
             switch (data.action) {
                 case "list_users":
@@ -105,8 +107,13 @@
                         })
                     }
                     break;
+
+                case "broadcast":
+                    o.innerHTML = o.innerHTML + data.message + "<br>";
+                    break;
             }
         }
+
 
         let userInput = document.getElementById("username");
         userInput.addEventListener("change", function () {
@@ -115,6 +122,45 @@
             jsonData["username"] = this.value;
             socket.send(JSON.stringify(jsonData));
         })
+
+        document.getElementById("message").addEventListener("keydown", function (event) {
+            if (event.code === "Enter") {
+                if (!socket) {
+                    console.log("no connection");
+                    return false
+                }
+
+                if ((userField.value === "") || (messageField.value === "")) {
+                    alert ("fill out user and message");
+                    return false;
+                } else {
+                    sendMessage()
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+                sendMessage();
+            }
+        })
+
+
+        document.getElementById("sendBtn").addEventListener("click", function() {
+            if ((userField.value === "") || (messageField.value === "")) {
+                alert ("fill out user and message");
+                return false;
+            } else {
+                sendMessage()
+            }
+        })
     })
+
+    function sendMessage() {
+        let jsonData = {};
+        jsonData["action"] = "broadcast";
+        jsonData["username"] = document.getElementById("username").value;
+        jsonData["message"] = document.getElementById("message").value;
+        socket.send(JSON.stringify(jsonData));
+        document.getElementById("message").value = "";
+    }
 </script>
 </html>

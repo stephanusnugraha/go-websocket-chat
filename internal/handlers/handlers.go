@@ -19,7 +19,7 @@ var views = jet.NewSet(
 	jet.InDevelopmentMode(),
 )
 
-// upgradeConnection is the websocket upgrade from gorilla/websockets
+// upgradeConnection is the websocket upgrader from gorilla/websockets
 var upgradeConnection = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -113,16 +113,18 @@ func ListenToWsChannel() {
 			broadcastToAll(response)
 
 		case "left":
+			// handle the situation where a user leaves the page
 			response.Action = "list_users"
 			delete(clients, e.Conn)
 			users := getUserList()
 			response.ConnectedUsers = users
 			broadcastToAll(response)
-		}
 
-		//response.Action = "Got here"
-		//response.Message = fmt.Sprintf("Some message, and action was %s", e.Action)
-		//broadcastToAll(response)
+		case "broadcast":
+			response.Action = "broadcast"
+			response.Message = fmt.Sprintf("<strong>%s</strong>: %s", e.Username, e.Message)
+			broadcastToAll(response)
+		}
 	}
 }
 
